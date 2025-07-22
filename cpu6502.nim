@@ -8,6 +8,8 @@ var
     progCounter: uint16
     aReg: uint8
 
+    flags: array[7, bool]
+
 proc testClkLow(): bool =
     if oldClk == true and clk == false:
         return true
@@ -27,6 +29,25 @@ proc changeState(newState: (proc(), proc(), proc()))
 var fetch: (proc(), proc(), proc())
 
 
+#region RORA
+
+proc RORAinit()=
+    discard
+
+proc RORAmain()=
+    if testClkHigh():
+        var tmpCarry: bool = flags[0]
+        flags[0] = (aReg and 0b00000001) == 1
+        aReg = aReg shr 1
+        aReg += tmpCarry.uint8 shl 7
+        changeState(fetch)
+
+proc RORAend()=
+    discard
+
+var RORA: (proc(), proc(), proc()) = (RORAinit, RORAmain, RORAend)
+
+#endregion
 
 #region JMPa
 var
@@ -138,6 +159,8 @@ proc fetchTest()=
         changeState(nop)
     elif d.dToNum == 0x4C:
         changeState(JMPa)
+    elif d.dToNum == 0x6A:
+        changeState(RORA)
     elif d.dToNum == 0x8D:
         changeState(STAa)
     elif d.dToNum == 0xA9:
