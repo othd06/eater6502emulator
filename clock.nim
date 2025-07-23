@@ -9,7 +9,7 @@ proc init*()=
 
 proc loop*()=
     if isKeyDown(C):
-        if getTime() - elapsedTime > 0.5/100:
+        if getTime() - elapsedTime > 0.5/500:
             elapsedTime = getTime()
             clk = not clk
     else:

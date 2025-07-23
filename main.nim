@@ -16,7 +16,7 @@ import
 proc main()=
 
     initWindow(500, 500, "eater6502emulator")
-    setTargetFPS(1000000)
+    setTargetFPS(0)
 
     
     cpu6502.init()
@@ -33,6 +33,7 @@ proc main()=
     while not windowShouldClose():
         beginDrawing()
         clearBackground(RayWhite)
+        drawFPS(0, 0)
 
         cpu6502.loop()
         clock.loop()
