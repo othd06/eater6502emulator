@@ -36,6 +36,11 @@ proc init*()=
 proc loop*()=
     if isKeyPressed(B):
         echo "PORTB: " & registers[PORTB].toHex()
+        echo "DDB: " & registers[DDB].toHex()
+    
+    if isKeyPressed(A):
+        echo "PORTA: " & registers[PORTA].toHex()
+        echo "DDA: " & registers[DDA].toHex()
 
     if m[1] == true:
         #reset

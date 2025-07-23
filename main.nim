@@ -8,7 +8,8 @@ import
     #eaResistors,
     eeprom,
     via65C22,
-    portBleds
+    #portBleds
+    lcdDisplay
 
 
 
@@ -25,7 +26,8 @@ proc main()=
     #eaResistors.init()
     eeprom.init()
     via65C22.init()
-    portBleds.init()
+    #portBleds.init()
+    lcdDisplay.init()
 
 
     while not windowShouldClose():
@@ -38,7 +40,8 @@ proc main()=
         #eaResistors.loop()
         eeprom.loop()
         via65C22.loop()
-        portBleds.loop()
+        #portBleds.loop()
+        lcdDisplay.loop()
 
         arduinoLogger.loop()
 
