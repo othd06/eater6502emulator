@@ -84,39 +84,41 @@ proc drawChars()=
     drawText($characters[55], 400-8, 300-8, 16, Black)
 
 proc doInstruction()=
-    if io[15]:          #set DDRAM address
+    if io[8]:          #set DDRAM address
         discard
-    elif io[14]:        #set CGRAM address
+    elif io[9]:        #set CGRAM address
         discard
-    elif io[13]:        #function set
-        if io[12]:      #8-bit mode
+    elif io[10]:        #function set
+        if io[11]:      #8-bit mode
             bitMode8 = true
         else:           #4-bit mode
             bitMode8 = false
         
-        if io[11] == false:
+        if io[12] == false:
             echo "\aError: the display has two lines but instruction send to display in one line mode"
             quit(1)
 
-        if io[10]:
+        if io[13]:
             echo "\nError: the display is 5*8 dots per character but instruction sent to display in 5*10 mode"
             quit(1)
-    elif io[12]:        #cursor or display shift
+    elif io[11]:        #cursor or display shift
         discard
-    elif io[11]:        #display on/off control
-        displayOn = io[10]
-        cursorOn = io[9]
-        cursorBlinking = io[8]
-    elif io[10]:        #entry mode set
-        cursorMoveDirection = io[9]
-        displayShift = io[8]
-    elif io[9]:         #return home
+    elif io[12]:        #display on/off control
+        displayOn = io[13]
+        cursorOn = io[14]
+        cursorBlinking = io[15]
+    elif io[13]:        #entry mode set
+        cursorMoveDirection = io[14]
+        displayShift = io[15]
+    elif io[14]:         #return home
         discard
-    elif io[8]:         #clear display
-        discard
+    elif io[15]:         #clear display
+        echo "clear"
+        init()
 
 
 proc loop*()=
+    #drawText($cursor, 400, 100, 50, Black)
 
     if isKeyPressed(D):
         echo characters
@@ -127,6 +129,10 @@ proc loop*()=
     if io[2] == false and io[1] == false and io[0] == true:
         doInstruction()
     
+    if io[0] and io[1] and io[2] == false:
+        io[15] = false
+        #TODO: work out what io:14-8 should be
+    
     if io[2] == true and io[1] == false and testEHigh():
         #echo "Char"
         characters[cursor] = cast[char]([io[8], io[9], io[10], io[11], io[12], io[13], io[14], io[15]].dToNum())
@@ -136,6 +142,8 @@ proc loop*()=
                     characters[i] = characters[i+1]
             else:
                 cursor += 1
+                if cursor >= characters.len():
+                    cursor = 0
         else:
             if displayShift == true:
                 var oldChars = characters
@@ -143,6 +151,8 @@ proc loop*()=
                     characters[i] = oldChars[i-1]
             else:
                 cursor -= 1
+                if cursor < 0:
+                    cursor = characters.len()-1
     
     drawChars()
 

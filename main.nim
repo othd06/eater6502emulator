@@ -9,7 +9,8 @@ import
     eeprom,
     via65C22,
     #portBleds
-    lcdDisplay
+    lcdDisplay,
+    ram
 
 
 
@@ -28,6 +29,7 @@ proc main()=
     via65C22.init()
     #portBleds.init()
     lcdDisplay.init()
+    ram.init()
 
 
     while not windowShouldClose():
@@ -43,6 +45,7 @@ proc main()=
         via65C22.loop()
         #portBleds.loop()
         lcdDisplay.loop()
+        ram.loop()
 
         arduinoLogger.loop()
 

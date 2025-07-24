@@ -1,0 +1,24 @@
+
+
+import wires
+
+var
+    data: array[0b100000000000000, uint8]
+
+
+proc init*()=
+    for i in 0..<data.len():
+        data[i] = 0b00000000
+
+
+
+proc loop*()=
+    if a[0] == true or a[1] == true: return
+
+    var output = data[a.aToNum()]
+
+    if m[5]:
+        for i in 0..<d.len():
+            d[i] = ((output shl i) and 0b10000000) == 0b10000000
+    else:
+        data[a.aToNum()] = d.dToNum()
