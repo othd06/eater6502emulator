@@ -1,4 +1,4 @@
-import raylib
+import raylib, math
 
 import wires
 
@@ -44,9 +44,23 @@ proc init*()=
         characters[i] = cast[char](0x95)
     cursor = 0
 
+proc drawCursor()=
+    if not (cursor in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55]):
+        return
+    var
+        posX: int32 = 0
+        posY: int32 = 0
+    
+    if cursor in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]:
+        posY= 210
+        posX = 92+cursor.int32*20
+    else:
+        posY = 215
+        posX = cursor.int32*20-708
+    
+    drawLine(posX, posY, posX+16, posY, Black)
 
 proc drawChars()=
-    #TODO: implement showing the cursor
     if displayOn == false: return
 
     drawText($characters[0 ], 100-8, 200-8, 16, Black)
@@ -83,6 +97,13 @@ proc drawChars()=
     drawText($characters[54], 380-8, 300-8, 16, Black)
     drawText($characters[55], 400-8, 300-8, 16, Black)
 
+    if cursorOn:
+        if cursorBlinking:
+            if getTime() mod 0.8 < 0.4:
+                drawCursor()
+        else:
+            drawCursor()
+
 proc doInstruction()=
     if io[8]:          #set DDRAM address
         discard
@@ -113,7 +134,7 @@ proc doInstruction()=
     elif io[14]:         #return home
         discard
     elif io[15]:         #clear display
-        echo "clear"
+        #echo "clear"
         init()
 
 
