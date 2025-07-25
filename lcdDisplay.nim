@@ -156,12 +156,13 @@ proc loop*()=
     
     if io[2] == true and io[1] == false and testEHigh():
         #echo "Char"
-        characters[cursor] = cast[char]([io[8], io[9], io[10], io[11], io[12], io[13], io[14], io[15]].dToNum())
         if cursorMoveDirection == true:
             if displayShift == true:
                 for i in 0..<cursor:
                     characters[i] = characters[i+1]
+                characters[cursor] = cast[char]([io[8], io[9], io[10], io[11], io[12], io[13], io[14], io[15]].dToNum())
             else:
+                characters[cursor] = cast[char]([io[8], io[9], io[10], io[11], io[12], io[13], io[14], io[15]].dToNum())
                 cursor += 1
                 if cursor >= characters.len():
                     cursor = 0
@@ -170,7 +171,9 @@ proc loop*()=
                 var oldChars = characters
                 for i in cursor+1..<characters.len():
                     characters[i] = oldChars[i-1]
+                characters[cursor] = cast[char]([io[8], io[9], io[10], io[11], io[12], io[13], io[14], io[15]].dToNum())
             else:
+                characters[cursor] = cast[char]([io[8], io[9], io[10], io[11], io[12], io[13], io[14], io[15]].dToNum())
                 cursor -= 1
                 if cursor < 0:
                     cursor = characters.len()-1

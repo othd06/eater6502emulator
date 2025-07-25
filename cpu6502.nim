@@ -1,6 +1,6 @@
 import strutils, raylib
 
-import wires
+import wires, signals
 
 var
     oldClk: bool = false
@@ -8,6 +8,7 @@ var
     progCounter: uint16
     aReg: uint8
     xReg: uint8
+    yReg: uint8
     stackPointer: uint8
 
     flags: array[8, bool]
@@ -31,12 +32,12 @@ proc changeState(newState: (proc(), proc(), proc()))
 var fetch: (proc(), proc(), proc())
 
 
-#region RORa
+#region RORA
 
-proc RORaInit()=
+proc RORAInit()=
     discard
 
-proc RORaMain()=
+proc RORAMain()=
     if testClkHigh():
         var tmpCarry: bool = flags[0]
         flags[0] = (aReg and 0b00000001) == 1
@@ -44,11 +45,56 @@ proc RORaMain()=
         aReg += tmpCarry.uint8 shl 7
         changeState(fetch)
 
-proc RORaEnd()=
+proc RORAEnd()=
     discard
 
-var RORa: (proc(), proc(), proc()) = (RORaInit, RORaMain, RORaEnd)
+var RORA: (proc(), proc(), proc()) = (RORAInit, RORAMain, RORAEnd)
 
+#endregion
+
+#region ROLa
+var
+    ROLaClocks: int = 0
+    ROLaAddress: uint16 = 0
+    ROLaReg: uint8 = 0
+
+proc ROLaInit()=
+    ROLaClocks = 0
+    ROLaAddress = 0
+    ROLaReg = 0
+
+proc ROLaMain()=
+    if testClkHigh():
+        if ROLaClocks == 0:
+            ROLaAddress = d.dToNum().uint16
+            progCOunter += 1
+            for i in 0..<a.len():
+                a[i] = ((progCounter shl i) and 0b1000000000000000) == 0b1000000000000000
+        if ROLaClocks == 1:
+            ROLaAddress += d.dToNum().uint16 shl 8
+            progCounter += 1
+            for i in 0..<a.len():
+                a[i] = ((ROLaAddress shl i) and 0b1000000000000000) == 0b1000000000000000
+        if ROLaClocks == 2:
+            ROLaReg = d.dToNum()
+            var tempCarry: bool = flags[0]
+            flags[0] = (ROLaReg and 0b10000000) == 0b10000000
+            ROLaReg = ROLaReg shl 1
+            ROLaReg += tempCarry.uint8
+        if ROLaClocks == 3:
+            m[5] = false
+            for i in 0..<d.len():
+                d[i] = ((ROLaReg shl i) and 0b10000000) == 0b10000000
+        if ROLaClocks == 4:
+            m[5] = true
+            changeState(fetch)
+        ROLaClocks += 1
+
+proc ROLaEnd()=
+    flags[1] = aReg == 0        #WARNING: this code may be incorrect
+    flags[7] = cast[int8](ROLaReg) < 0
+
+var ROLa: (proc(), proc(), proc()) = (ROLaInit, ROLaMain, ROLaEnd)
 #endregion
 
 #region JMPa
@@ -135,6 +181,8 @@ var
 proc RTSsInit()=
     RTSsClocks = 0
     RTSsAddress = 0
+    if subReturn[0] > 0:
+        subReturn[1] = true
 
 proc RTSsMain()=
     if testClkHigh():
@@ -265,6 +313,84 @@ var STAa: (proc(), proc(), proc()) = (STAaInit, STAaMain, STAaEnd)
 
 #endregion
 
+#region STAay
+var
+    STAayAddress: uint16 = 0
+    STAayClocks: int = 0
+
+proc STAayInit()=
+    STAayAddress = 0
+    STAayClocks = 0
+
+proc STAayMain()=
+    if testClkHigh():
+        if STAayClocks == 0:
+            STAayAddress += d.dToNum()
+            progCounter += 1
+            for i in 0..<a.len():
+                a[i] = ((progCounter shl i) and 0b1000000000000000) == 0b1000000000000000
+            STAayClocks += 1
+        elif STAayClocks == 1:
+            STAayAddress += d.dToNum().uint16 shl 8
+            STAayAddress += yReg.uint16
+            progCounter += 1
+            for i in 0..<a.len():
+                a[i] = ((STAayAddress shl i) and 0b1000000000000000) == 0b1000000000000000
+            for i in 0..<d.len():
+                d[i] = ((aReg shl i) and 0b10000000) == 0b10000000
+            m[5] = false
+            STAayClocks += 1
+            #echo("address: " & STAaAddress.toHex())
+        elif STAayClocks == 2:
+            STAayClocks += 1
+        elif STAayClocks == 3:
+            changeState(fetch)
+
+
+proc STAayEnd()=
+    m[5] = true
+
+var STAay: (proc(), proc(), proc()) = (STAayInit, STAayMain, STAayEnd)
+
+#endregion
+
+#region STYa
+var
+    STYaAddress: uint16 = 0
+    STYaClocks: int = 0
+
+proc STYaInit()=
+    STYaAddress = 0
+    STYaClocks = 0
+
+proc STYaMain()=
+    if testClkHigh():
+        if STYaClocks == 0:
+            STYaAddress += d.dToNum()
+            progCounter += 1
+            for i in 0..<a.len():
+                a[i] = ((progCounter shl i) and 0b1000000000000000) == 0b1000000000000000
+            STYaClocks += 1
+        elif STYaClocks == 1:
+            STYaAddress += d.dToNum().uint16 shl 8
+            progCounter += 1
+            for i in 0..<a.len():
+                a[i] = ((STYaAddress shl i) and 0b1000000000000000) == 0b1000000000000000
+            for i in 0..<d.len():
+                d[i] = ((yReg shl i) and 0b10000000) == 0b10000000
+            m[5] = false
+            STYaClocks += 1
+            #echo("address: " & STAaAddress.toHex())
+        elif STYaClocks == 2:
+            changeState(fetch)
+
+
+proc STYaEnd()=
+    m[5] = true
+
+var STYa: (proc(), proc(), proc()) = (STYaInit, STYaMain, STYaEnd)
+#endregion
+
 #region TXSi
 proc TXSiInit()=
     discard
@@ -278,6 +404,54 @@ proc TXSiEnd()=
     discard
 
 var TXSi: (proc(), proc(), proc()) = (TXSiInit, TXSiMain, TXSiEnd)
+#endregion
+
+#region TAYi
+proc TAYiInit()=
+    discard
+
+proc TAYiMain()=
+    if testClkHigh():
+        yReg = aReg
+        changeState(fetch)
+
+proc TAYiEnd()=
+    flags[1] = yReg == 0
+    flags[7] = cast[int8](yReg) < 0
+
+var TAYi: (proc(), proc(), proc()) = (TAYiInit, TAYiMain, TAYiEnd)
+#endregion
+
+#region TAXi
+proc TAXiInit()=
+    discard
+
+proc TAXiMain()=
+    if testClkHigh():
+        xReg = aReg
+        changeState(fetch)
+
+proc TAXiEnd()=
+    flags[1] = xReg == 0
+    flags[7] = cast[int8](xReg) < 0
+
+var TAXi: (proc(), proc(), proc()) = (TAXiInit, TAXiMain, TAXiEnd)
+#endregion
+
+#region TXAi
+proc TXAiInit()=
+    discard
+
+proc TXAiMain()=
+    if testClkHigh():
+        aReg = xReg
+        changeState(fetch)
+
+proc TXAiEnd()=
+    flags[1] = aReg == 0
+    flags[7] = cast[int8](aReg) < 0
+
+var TXAi: (proc(), proc(), proc()) = (TXAiInit, TXAiMain, TXAiEnd)
 #endregion
 
 #region LDXi
@@ -331,6 +505,32 @@ proc LDAiEnd()=
     flags[7] = cast[int8](aReg)<0
 
 var LDAi: (proc(), proc(), proc()) = (LDAiInit, LDAiMain, LDAiEnd)
+#endregion
+
+#region LDYi
+var
+    LDYiClocked: bool = false
+
+proc LDYiInit()=
+    LDYiClocked = false
+
+proc LDYiMain()=
+    if testClkLow():
+        if LDYiClocked:
+            yReg = d.dToNum()
+            progCounter += 1
+            changeState(fetch)
+    if testClkHigh():
+        if not LDYiClocked:
+            for i in 0..<a.len():
+                a[i] = ((progCounter shl i) and 0b1000000000000000) == 0b1000000000000000
+            LDYiClocked = true
+
+proc LDYiEnd()=
+    flags[1] = yReg==0
+    flags[7] = cast[int8](yReg)<0
+
+var LDYi: (proc(), proc(), proc()) = (LDYiInit, LDYiMain, LDYiEnd)
 #endregion
 
 #region LDAa
@@ -411,6 +611,51 @@ proc LDAaxEnd()=
 var LDAax: (proc(), proc(), proc()) = (LDAaxInit, LDAaxMain, LDAaxEnd)
 #endregion
 
+#region LDAay
+var
+    LDAayClocks: int = 0
+    LDAayAddress: uint16 = 0
+    LDAayPageCrossed: bool = false
+
+proc LDAayInit()=
+    LDAayClocks = 0
+    LDAayAddress = 0
+    LDAayPageCrossed = false
+
+proc LDAayMain()=
+    if testClkHigh():
+        if LDAayClocks == 0:
+            LDAayAddress += d.dToNum()
+            progCounter += 1
+            for i in 0..<a.len():
+                a[i] = ((progCounter shl i) and 0b1000000000000000) == 0b1000000000000000
+        if LDAayClocks == 1:
+            if LDAayPageCrossed != true:
+                LDAayAddress += (d.dToNum().uint16 shl 8)
+                var highByte: uint8 = (LDAayAddress shr 8).uint8
+                LDAayAddress += yReg
+                if (LDAayAddress shr 8).uint8 != highByte:
+                    LDAayPageCrossed = true
+                    LDAayClocks -= 1
+                else:
+                    for i in 0..<a.len():
+                        a[i] = ((LDAayAddress shl i) and 0b1000000000000000) == 0b1000000000000000
+            else:
+                for i in 0..<a.len():
+                    a[i] = ((LDAayAddress shl i) and 0b1000000000000000) == 0b1000000000000000
+        if LDAayClocks == 2:
+            aReg = d.dToNum()
+            progCounter += 1
+            changeState(fetch)
+        LDAayClocks += 1
+
+proc LDAayEnd()=
+    flags[1] = aReg==0
+    flags[7] = cast[int8](aReg)<0
+
+var LDAay: (proc(), proc(), proc()) = (LDAayInit, LDAayMain, LDAayEnd)
+#endregion
+
 #region BEQr
 var
     BEQrShouldChange: bool = false
@@ -449,6 +694,46 @@ proc BEQrEnd()=
     discard
 
 var BEQr: (proc(), proc(), proc()) = (BEQrInit, BEQrMain, BEQrEnd)
+#endregion
+
+#region BCCr
+var
+    BCCrShouldChange: bool = false
+    BCCrClocks: int = 0
+    BCCrHighByte: uint8 = 0
+
+proc BCCrInit()=
+    BCCrShouldChange = false
+    BCCrClocks = 0
+    BCCrHighByte = 0
+
+proc BCCrMain()=
+    if testClkHigh():
+        if not flags[0]:
+            if BCCrClocks == 0:
+                progCounter += 1
+                BCCrHighByte = (progCounter shr 8).uint8
+            if BCCrClocks == 1:
+                if d[0]:
+                    progCounter -= not d.dToNum()
+                    progCounter -= 1
+                else:
+                    progCounter += d.dToNum()
+                if BCCrHighByte == (progCounter shr 8).uint8:
+                    changeState(fetch)
+            if BCCrClocks == 2:
+                changeState(fetch)
+            BCCrClocks += 1
+        else:
+            progCounter += 1
+            BCCrShouldChange = true
+    if BCCrShouldChange:
+        changeState(fetch)
+
+proc BCCrEnd()=
+    discard
+
+var BCCr: (proc(), proc(), proc()) = (BCCrInit, BCCrMain, BCCrEnd)
 #endregion
 
 #region BNEr
@@ -508,7 +793,41 @@ proc INXiEnd()=
 var INXi: (proc(), proc(), proc()) = (INXiInit, INXiMain, INXiEnd)
 #endregion
 
-#region LDAi
+#region INYi
+
+proc INYiInit()=
+    discard
+
+proc INYiMain()=
+    if testClkHigh():
+        yReg += 1
+        changeState(fetch)
+
+proc INYiEnd()=
+    flags[1] = yReg==0
+    flags[7] = cast[int8](yReg)<0
+
+var INYi: (proc(), proc(), proc()) = (INYiInit, INYiMain, INYiEnd)
+#endregion
+
+#region DEXi
+
+proc DEXiInit()=
+    discard
+
+proc DEXiMain()=
+    if testClkHigh():
+        xReg -= 1
+        changeState(fetch)
+
+proc DEXiEnd()=
+    flags[1] = xReg==0
+    flags[7] = cast[int8](xReg)<0
+
+var DEXi: (proc(), proc(), proc()) = (DEXiInit, DEXiMain, DEXiEnd)
+#endregion
+
+#region ANDi
 
 var
     ANDiClocked: bool = false
@@ -535,6 +854,124 @@ proc ANDiEnd()=
 var ANDi: (proc(), proc(), proc()) = (ANDiInit, ANDiMain, ANDiEnd)
 #endregion
 
+#region ORAa
+var
+    ORAaClocks: int = 0
+    ORAaAddress: uint16 = 0
+
+proc ORAaInit()=
+    ORAaClocks = 0
+
+proc ORAaMain()=
+    if testClkHigh():
+        if ORAaCLocks == 0:
+            ORAaAddress = d.dToNum().uint16
+            progCounter += 1
+            for i in 0..<a.len():
+                a[i] = ((progCounter shl i) and 0b1000000000000000) == 0b1000000000000000
+        elif ORAaCLocks == 1:
+            ORAaAddress += d.dToNum().uint16 shl 8
+            progCounter += 1
+            for i in 0..<a.len():
+                a[i] = ((ORAaAddress shl i) and 0b1000000000000000) == 0b1000000000000000
+        elif ORAaCLocks == 2:
+            aReg = aReg or d.dToNum()
+            changeState(fetch)
+        ORAaCLocks += 1
+
+proc ORAaEnd()=
+    flags[1] = aReg == 0
+    flags[7] = cast[int8](aReg) < 0
+
+var ORAa: (proc(), proc(), proc()) = (ORAaInit, ORAaMain, ORAaEnd)
+#endregion
+
+#region CLCi
+proc CLCiInit()=
+    return
+
+proc CLCiMain()=
+    if testClkHigh():
+        changeState(fetch)
+
+proc CLCiEnd()=
+    flags[0] = false
+
+var CLCi: (proc(), proc(), proc()) = (CLCiInit, CLCiMain, CLCiEnd)
+#endregion
+
+#region SECi
+proc SECiInit()=
+    return
+
+proc SECiMain()=
+    if testClkHigh():
+        changeState(fetch)
+
+proc SECiEnd()=
+    flags[0] = true
+
+var SECi: (proc(), proc(), proc()) = (SECiInit, SECiMain, SECiEnd)
+#endregion
+
+#region ADCi
+var
+    ADCiOperand: uint8 = 0
+
+proc ADCiInit()=
+    discard
+
+proc ADCiMain()=
+    if testClkHigh():
+        ADCiOperand = d.dToNum()
+        progCounter += 1
+        var
+            newA: uint16 = ADCiOperand.uint16 + aReg.uint16 + flags[0].uint16
+            isNeg: bool = cast[int8](aReg) < 0
+        if newA == newA.uint8.uint16:
+            flags[0] = false
+        else:
+            flags[0] = true
+        aReg = newA.uint8
+        flags[6] = (cast[int8](aReg) < 0) != isNeg
+        changeState(fetch)
+
+proc ADCiEnd()=
+    flags[1] = aReg == 0
+    flags[7] = cast[int8](aReg) < 0
+
+var ADCi: (proc(), proc(), proc()) = (ADCiInit, ADCiMain, ADCiEnd)
+#endregion
+
+#region SBCi
+var
+    SBCiOperand: uint8 = 0
+
+proc SBCiInit()=
+    discard
+
+proc SBCiMain()=
+    if testClkHigh():
+        SBCiOperand = not d.dToNum()
+        progCounter += 1
+        var
+            newA: uint16 = SBCiOperand.uint16 + aReg.uint16 + flags[0].uint16
+            isNeg: bool = cast[int8](aReg) < 0
+        if newA == newA.uint8.uint16:
+            flags[0] = false
+        else:
+            flags[0] = true
+        aReg = newA.uint8
+        flags[6] = (cast[int8](aReg) < 0) != isNeg
+        changeState(fetch)
+
+proc SBCiEnd()=
+    flags[1] = aReg == 0
+    flags[7] = cast[int8](aReg) < 0
+
+var SBCi: (proc(), proc(), proc()) = (SBCiInit, SBCiMain, SBCiEnd)
+#endregion
+
 #region nop
 proc nopInit()=
     return
@@ -550,10 +987,18 @@ var NOP: (proc(), proc(), proc()) = (nopInit, nopMain, nopEnd)
 #endregion
 
 proc fetchTest()=
-    if d.dToNum == 0x20:
+    if d.dToNum == 0x0D:
+        changeState(ORAa)
+    elif d.dToNum == 0x18:
+        changeState(CLCi)
+    elif d.dToNum == 0x20:
         changeState(JSRa)
+    elif d.dToNum == 0x2E:
+        changeState(ROLa)
     elif d.dToNum == 0x29:
         changeState(ANDi)
+    elif d.dToNum == 0x38:
+        changeState(SECi)
     elif d.dToNum == 0x48:
         changeState(PHAi)
     elif d.dToNum == 0x4C:
@@ -562,24 +1007,48 @@ proc fetchTest()=
         changeState(RTSs)
     elif d.dToNum == 0x68:
         changeState(PLAs)
+    elif d.dToNum == 0x69:
+        changeState(ADCi)
     elif d.dToNum == 0x6A:
-        changeState(RORa)
+        changeState(RORA)
+    elif d.dToNum == 0x8A:
+        changeState(TXAi)
+    elif d.dToNum == 0x8C:
+        changeState(STYa)
     elif d.dToNum == 0x8D:
         changeState(STAa)
+    elif d.dToNum == 0x90:
+        changeState(BCCr)
+    elif d.dToNum == 0x99:
+        changeState(STAay)
     elif d.dToNum == 0x9A:
         changeState(TXSi)
+    elif d.dToNum == 0xA0:
+        changeState(LDYi)
     elif d.dToNum == 0xA2:
         changeState(LDXi)
+    elif d.dToNum == 0xA8:
+        changeState(TAYi)
     elif d.dToNum == 0xA9:
         changeState(LDAi)
+    elif d.dToNum == 0xAA:
+        changeState(TAXi)
     elif d.dToNum == 0xAD:
         changeState(LDAa)
+    elif d.dToNum == 0xB9:
+        changeState(LDAay)
     elif d.dToNum == 0xBD:
         changeState(LDAax)
+    elif d.dToNum == 0xC8:
+        changeState(INYi)
+    elif d.dToNum == 0xCA:
+        changeState(DEXi)
     elif d.dToNum == 0xD0:
         changeState(BNEr)
     elif d.dToNum == 0xE8:
         changeState(INXi)
+    elif d.dToNum == 0xE9:
+        changeState(SBCi)
     elif d.dToNum == 0xEA:
         changeState(NOP)
     elif d.dToNum == 0xF0:

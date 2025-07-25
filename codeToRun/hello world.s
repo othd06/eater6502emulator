@@ -3,10 +3,6 @@ PORTA = $6001
 DDRB = $6002
 DDRA = $6003
 
-value = $0200    ;  2 bytes
-mod10 = $0202    ;  2 bytes
-message = $0204  ;  6 bytes
-
 E  = %10000000
 RW = %01000000
 RS = %00100000
@@ -31,58 +27,6 @@ reset:
   lda #$00000001 ; Clear display
   jsr lcd_instruction
 
-
-  lda #0
-  sta message
-
-  ;Initialise value to be the number we want to convert
-  lda number
-  sta value
-  lda number + 1
-  sta value + 1
-
-divide:
-  ;Initialise the remainder to be 0
-  lda #0
-  sta mod10
-  sta mod10 + 1
-  clc
-
-  ldx #16
-divloop:
-  ;Rotate quotient and remainder
-  rol value
-  rol value + 1
-  rol mod10
-  rol mod10 + 1
-
-  ;a,y = dividend - divisor
-  sec
-  lda mod10
-  sbc #10
-  tay  ;  save low byte in Y
-  lda mod10 + 1
-  sbc #0
-  bcc ignore_result  ; branch if dividend is less than divisor
-  sty mod10
-  sta mod10 + 1
-
-ignore_result:
-  dex
-  bne divloop
-  rol value
-  rol value + 1
-
-  lda mod10
-  clc
-  adc #"0"
-  jsr push_char
-
-  ;  if value != 0, then continue dividing
-  lda value
-  ora value + 1
-  bne divide  ;  branch if the value is not zero
-
   ldx #0
 print:
   lda message,x
@@ -94,28 +38,7 @@ print:
 loop:
   jmp loop
 
-number: .word 1729
-
-;Add the character in the A register to the beginning of the null terminated string 'message'
-push_char:
-  pha  ; Push new first character onto the stack
-  ldy #0
-
-char_loop:
-  lda message, y
-  tax  ; Load character from the string and put it in the x register
-  pla
-  sta message, y  ; Pull char off stack and add it to the string
-  iny
-  txa
-  pha  ; push char from string onto stack
-  bne char_loop
-
-  pla
-  sta message, y  ; Put the null termination back on the string
-
-  rts
-
+message: .asciiz "Hello, world!"
 
 lcd_wait:
   pha
