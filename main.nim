@@ -1,6 +1,7 @@
-import raylib
+import raylib, nimprof
 
 import
+    wires,
     cpu6502,
     clock,
     resetButton,
@@ -23,13 +24,15 @@ proc main()=
     cpu6502.init()
     clock.init()
     resetButton.init()
-    arduinoLogger.init()
+    #arduinoLogger.init()
     #eaResistors.init()
     eeprom.init()
     via65C22.init()
     #portBleds.init()
     lcdDisplay.init()
     ram.init()
+
+    m[17] = true
 
 
     while not windowShouldClose():
@@ -47,7 +50,7 @@ proc main()=
         lcdDisplay.loop()
         ram.loop()
 
-        arduinoLogger.loop()
+        #arduinoLogger.loop()
 
 
         endDrawing()

@@ -4,6 +4,7 @@ import wires, signals
 
 var
     oldClk: bool = false
+    oldNMI: bool = false
 
     progCounter: uint16
     aReg: uint8
@@ -1057,11 +1058,134 @@ proc fetchTest()=
         echo("\aError: cannot decode instruction with opcode: " & d.dToNum().toHex())
         quit(1)
 
+#region NMI
+var
+    NMIclocks: int = 0
+    NMIaddress: uint16 = 0
+
+proc NMIinit()=
+    NMIclocks = 0
+    progCounter -= 1
+    for i in 0..<a.len():
+        a[i] = ((progCounter shl i) and 0b1000000000000000) == 0b1000000000000000
+
+proc NMImain()=
+    if testClkLow():
+        if NMIclocks == 5:
+            NMIaddress = d.dToNum().uint16
+        if NMIclocks == 6:
+            NMIaddress += d.dToNum().uint16 shl 8
+    if testClkHigh():
+        if NMIclocks == 0:
+            for i in 0..<a.len():
+                a[i] = ((stackPointer shl i) and 0b1000000000000000) == 0b1000000000000000    
+            m[5] = false
+            stackPointer -= 1
+            for i in 0..<d.len():
+                d[i] = ((progCounter.uint8 shl i) and 0b10000000) == 0b10000000
+        elif NMIclocks == 1:
+            for i in 0..<a.len():
+                a[i] = ((stackPointer shl i) and 0b1000000000000000) == 0b1000000000000000    
+            m[5] = false
+            stackPointer -= 1
+            for i in 0..<d.len():
+                d[i] = (((progCounter shr 8).uint8 shl i) and 0b10000000) == 0b10000000
+        elif NMIclocks == 2:
+            for i in 0..<a.len():
+                a[i] = ((stackPointer shl i) and 0b1000000000000000) == 0b1000000000000000    
+            m[5] = false
+            stackPointer -= 1
+            d = flags
+        elif NMIclocks == 3:
+            m[5] = true
+        elif NMIclocks == 4:
+            for i in 0..<a.len():
+                a[i] = (0xFFFA.uint16 and 0b1000000000000000) == 0b1000000000000000
+        elif NMIclocks == 5:
+            for i in 0..<a.len():
+                a[i] = (0xFFFB.uint16 and 0b1000000000000000) == 0b1000000000000000
+        elif NMIclocks == 6:
+            progCounter = NMIaddress
+            changeState(fetch)
+        NMIclocks += 1
+
+proc NMIend()=
+    discard
+
+var NMI: (proc(), proc(), proc()) = (NMIinit, NMImain, NMIend)
+#endregion
+
+#region IRQ
+var
+    IRQclocks: int = 0
+    IRQaddress: uint16 = 0
+
+proc IRQinit()=
+    IRQclocks = 0
+    progCounter -= 1
+    for i in 0..<a.len():
+        a[i] = ((progCounter shl i) and 0b1000000000000000) == 0b1000000000000000
+
+proc IRQmain()=
+    if testClkLow():
+        if IRQclocks == 5:
+            IRQaddress = d.dToNum().uint16
+        if IRQclocks == 6:
+            IRQaddress += d.dToNum().uint16 shl 8
+    if testClkHigh():
+        if IRQclocks == 0:
+            for i in 0..<a.len():
+                a[i] = ((stackPointer shl i) and 0b1000000000000000) == 0b1000000000000000    
+            m[5] = false
+            stackPointer -= 1
+            for i in 0..<d.len():
+                d[i] = ((progCounter.uint8 shl i) and 0b10000000) == 0b10000000
+        elif IRQclocks == 1:
+            for i in 0..<a.len():
+                a[i] = ((stackPointer shl i) and 0b1000000000000000) == 0b1000000000000000    
+            m[5] = false
+            stackPointer -= 1
+            for i in 0..<d.len():
+                d[i] = (((progCounter shr 8).uint8 shl i) and 0b10000000) == 0b10000000
+        elif IRQclocks == 2:
+            for i in 0..<a.len():
+                a[i] = ((stackPointer shl i) and 0b1000000000000000) == 0b1000000000000000    
+            m[5] = false
+            stackPointer -= 1
+            d = flags
+        elif IRQclocks == 3:
+            m[5] = true
+        elif IRQclocks == 4:
+            for i in 0..<a.len():
+                a[i] = (0xFFFA.uint16 and 0b1000000000000000) == 0b1000000000000000
+        elif IRQclocks == 5:
+            for i in 0..<a.len():
+                a[i] = (0xFFFB.uint16 and 0b1000000000000000) == 0b1000000000000000
+        elif IRQclocks == 6:
+            progCounter = IRQaddress
+            changeState(fetch)
+        IRQclocks += 1
+
+proc IRQend()=
+    discard
+
+var IRQ: (proc(), proc(), proc()) = (IRQinit, IRQmain, IRQend)
+#endregion
+
 #region fetch
 proc fetchInit()=
     m[5] = true
     for i in 0..<a.len():
         a[i] = ((progCounter shl i) and 0b1000000000000000) == 0b1000000000000000
+    
+    if oldNMI == true and false:                                                    #NMI pin tied high on ben eater 6502 computer
+        changeState(NMI)
+        oldNMI = false
+    else:
+        oldNMI = false
+    
+    if m[17] == false:
+        changeState(IRQ)
 
 proc fetchMain()=
     if testClkHigh():

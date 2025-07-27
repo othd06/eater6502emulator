@@ -132,7 +132,7 @@ proc doInstruction()=
         cursorMoveDirection = io[14]
         displayShift = io[15]
     elif io[14]:         #return home
-        discard
+        cursor = 0
     elif io[15]:         #clear display
         #echo "clear"
         init()
