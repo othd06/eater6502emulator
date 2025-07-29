@@ -23,9 +23,9 @@ proc loop*()=
         waitingRTS = true
         subReturn[0] += 1
     elif isKeyDown(C):
-        if getTime() - elapsedTime > 0.5/500:
-            elapsedTime = getTime()
-            clk = not clk
+        #if getTime() - elapsedTime > 0.5/500:
+        #elapsedTime = getTime()
+        clk = not clk
     else:
         clk = isKeyDown(Space)
 

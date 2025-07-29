@@ -83,6 +83,7 @@ ignore_result:
   ora value + 1
   bne divide  ;  branch if the value is not zero
 
+  
   ldx #0
 print:
   lda message,x

@@ -1,7 +1,9 @@
-import raylib, nimprof
+import raylib
+#import nimprof
 
 import
     wires,
+    signals,
     cpu6502,
     clock,
     resetButton,
@@ -18,7 +20,7 @@ import
 proc main()=
 
     initWindow(500, 500, "eater6502emulator")
-    setTargetFPS(0)
+    setTargetFPS(100)
 
     
     cpu6502.init()
@@ -37,21 +39,20 @@ proc main()=
 
     while not windowShouldClose():
         beginDrawing()
-        clearBackground(RayWhite)
+        drawTexture(signals.texture, 0, 0, White)
+        #clearBackground(RayWhite)
         drawFPS(0, 0)
 
-        cpu6502.loop()
-        clock.loop()
-        resetButton.loop()
-        #eaResistors.loop()
-        eeprom.loop()
-        via65C22.loop()
-        #portBleds.loop()
-        lcdDisplay.loop()
-        ram.loop()
+        for i in 0..<20000:
+            clock.loop()
+            cpu6502.loop()
+            resetButton.loop()
+            eeprom.loop()
+            via65C22.loop()
+            lcdDisplay.loop()
+            ram.loop()
 
-        #arduinoLogger.loop()
-
+            #arduinoLogger.loop()
 
         endDrawing()
     
