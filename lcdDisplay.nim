@@ -1,6 +1,6 @@
 import raylib, math
 
-import wires, signals
+import wires
 
 #d1-7: io8-15
 #e: io0
@@ -10,7 +10,6 @@ import wires, signals
 
 var
     characters: array[80, char]
-    oldCharacters: array[80, char]
     cursor: int
     
     bitMode8: bool = false
@@ -23,10 +22,6 @@ var
     displayShift: bool = false
 
     oldE: bool = false
-
-    listeningDraw: bool = false
-
-    screenBlank: bool = true
 
 proc testELow(): bool =
     if oldE == true and io[0] == false:
@@ -65,80 +60,52 @@ proc drawCursor()=
         posY = 215
         posX = cursor.int32*20-708
     
-    imageDrawLine(signals.image, posX, posY, posX+16, posY, Black)
+    drawLine(posX, posY, posX+16, posY, Black)
 
-proc drawChars()=
-    if displayOnB:
-        if not screenBlank:
-            screenBlank = true
-            signals.image = loadImage("image.png")
-            signals.texture = loadTextureFromImage(signals.image)
-        return
-
-    if draw[1]:
-        screenBlank = false
+proc drawLoop*()=
+    if not displayOnB:
         #echo "draw"
         #echo listeningDraw
-        if listeningDraw:
-            imageDrawText(signals.image, $characters[0 ], 100-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[1 ], 120-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[2 ], 140-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[3 ], 160-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[4 ], 180-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[5 ], 200-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[6 ], 220-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[7 ], 240-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[8 ], 260-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[9 ], 280-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[10], 300-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[11], 320-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[12], 340-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[13], 360-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[14], 380-8, 200-8, 16, Black)
-            imageDrawText(signals.image, $characters[15], 400-8, 200-8, 16, Black)
+        drawText($characters[0 ], 100-8, 200-8, 16, Black)
+        drawText($characters[1 ], 120-8, 200-8, 16, Black)
+        drawText($characters[2 ], 140-8, 200-8, 16, Black)
+        drawText($characters[3 ], 160-8, 200-8, 16, Black)
+        drawText($characters[4 ], 180-8, 200-8, 16, Black)
+        drawText($characters[5 ], 200-8, 200-8, 16, Black)
+        drawText($characters[6 ], 220-8, 200-8, 16, Black)
+        drawText($characters[7 ], 240-8, 200-8, 16, Black)
+        drawText($characters[8 ], 260-8, 200-8, 16, Black)
+        drawText($characters[9 ], 280-8, 200-8, 16, Black)
+        drawText($characters[10], 300-8, 200-8, 16, Black)
+        drawText($characters[11], 320-8, 200-8, 16, Black)
+        drawText($characters[12], 340-8, 200-8, 16, Black)
+        drawText($characters[13], 360-8, 200-8, 16, Black)
+        drawText($characters[14], 380-8, 200-8, 16, Black)
+        drawText($characters[15], 400-8, 200-8, 16, Black)
 
-            imageDrawText(signals.image, $characters[40], 100-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[41], 120-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[42], 140-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[43], 160-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[44], 180-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[45], 200-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[46], 220-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[47], 240-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[48], 260-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[49], 280-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[50], 300-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[51], 320-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[52], 340-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[53], 360-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[54], 380-8, 300-8, 16, Black)
-            imageDrawText(signals.image, $characters[55], 400-8, 300-8, 16, Black)
+        drawText($characters[40], 100-8, 300-8, 16, Black)
+        drawText($characters[41], 120-8, 300-8, 16, Black)
+        drawText($characters[42], 140-8, 300-8, 16, Black)
+        drawText($characters[43], 160-8, 300-8, 16, Black)
+        drawText($characters[44], 180-8, 300-8, 16, Black)
+        drawText($characters[45], 200-8, 300-8, 16, Black)
+        drawText($characters[46], 220-8, 300-8, 16, Black)
+        drawText($characters[47], 240-8, 300-8, 16, Black)
+        drawText($characters[48], 260-8, 300-8, 16, Black)
+        drawText($characters[49], 280-8, 300-8, 16, Black)
+        drawText($characters[50], 300-8, 300-8, 16, Black)
+        drawText($characters[51], 320-8, 300-8, 16, Black)
+        drawText($characters[52], 340-8, 300-8, 16, Black)
+        drawText($characters[53], 360-8, 300-8, 16, Black)
+        drawText($characters[54], 380-8, 300-8, 16, Black)
+        drawText($characters[55], 400-8, 300-8, 16, Black)
 
-            if cursorOn:
-                if cursorBlinking:
-                    if getTime() mod 0.8 < 0.4:
-                        drawCursor()
-                else:
+        if cursorOn:
+            if cursorBlinking:
+                if getTime() mod 0.8 < 0.4:
                     drawCursor()
-            
-
-            draw[0] -= 1
-            listeningDraw = false
-            if draw[0] <= 0:
-                signals.texture = loadTextureFromImage(signals.image)
-                draw[1] = false
-    else:
-        if listeningDraw == false:
-            #echo "listening"
-            listeningDraw = true
-            draw[0] += 1
-    
-
-    if oldCharacters != characters:
-        oldCharacters = characters
-        signals.image = loadImage("image.png")
-        if draw[0] > 0:
-            draw[1] = true
+            else:
+                drawCursor()
 
 proc doInstruction()=
     if io[8]:          #set DDRAM address
@@ -214,7 +181,7 @@ proc loop*()=
                 if cursor < 0:
                     cursor = characters.len()-1
     
-    drawChars()
+    #drawChars()
 
 
 

@@ -39,8 +39,8 @@ proc main()=
 
     while not windowShouldClose():
         beginDrawing()
-        drawTexture(signals.texture, 0, 0, White)
-        #clearBackground(RayWhite)
+        #drawTexture(signals.texture, 0, 0, White)
+        clearBackground(RayWhite)
         drawFPS(0, 0)
 
         for i in 0..<20000:
@@ -53,6 +53,8 @@ proc main()=
             ram.loop()
 
             #arduinoLogger.loop()
+
+        lcdDisplay.drawLoop()
 
         endDrawing()
     

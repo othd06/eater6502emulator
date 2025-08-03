@@ -4,7 +4,6 @@ import raylib
 
 var
     subReturn*: (int, bool) = (0, false)
-    draw*: (int, bool) = (0, false)
 
     image*: Image = loadImage("image.png")
     texture*: Texture
